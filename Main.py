@@ -66,7 +66,7 @@ def save_images(key):
 
 # Create and start camera threads
 thread1 = camThread("Left", 1)
-thread2 = camThread("Right", 3)
+thread2 = camThread("Right", 2)
 
 thread1.start()
 thread2.start()
