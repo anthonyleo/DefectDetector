@@ -94,7 +94,7 @@ def save_images(key, threads):
             label = "OK" if thread.previewName == "Left" else "Defect"
         elif key == ord('w'):
             label = "OK"
-
+        """Allocate labels based on key presses:"""
         if label:
             filename = f"{label}_{thread.previewName}_{timestamp}.jpg"
             path = '/home/rohan/Pictures'
