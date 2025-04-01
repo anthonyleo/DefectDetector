@@ -81,7 +81,7 @@ def main():
             if thread.is_alive():
                 thread.stop()
         cv2.destroyAllWindows()
-
+"""hI i'M HERE"""
 def save_images(key, threads):
     """Saves images based on the pressed key."""
     timestamp = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
@@ -102,4 +102,4 @@ def save_images(key, threads):
             print(f"Saved {filename}")
 
 if __name__ == "__main__":
-    main()
+    main()P
