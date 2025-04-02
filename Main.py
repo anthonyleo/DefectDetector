@@ -3,6 +3,7 @@ import os
 import threading
 import datetime
 import queue
+import math
 import lgpio as GPIO
 
 # Define a global lock for synchronizing access to the cameras
@@ -10,6 +11,7 @@ camera_lock = threading.Lock()
 frame_queue = queue.Queue()
 exit_event = threading.Event()
 distance = 0
+radius = 50 #radius of the wheel in mm
 
 # Setup GPIO
 try:
@@ -65,18 +67,21 @@ class hallEffectThread(threading.Thread):
             if self.mock_mode:
                 # Simulate the Hall effect sensor
                 self.count += 1
-                distance = round(self.count * 0.157, 1)
-                print(f"Mock Distance: {distance}m")
+                distance = round(self.count * 2*math.pi*radius*0.0005, 1)
+                #print(f"Mock Distance: {distance}m")
                 threading.Event().wait(1)  # Simulate delay
             elif GPIO.gpio_read(h, 11) == 1:
                 self.count += 1
-                distance = round(self.count * 0.157, 1)  # Resolution of half a rotation 157mm travel
-                print(f"Distance: {distance}m")
+                distance = round(self.count * 2*math.pi*radius*0.0005, 1)  # Resolution of half a rotation 157mm travel
+                #print(f"Distance: {distance}m")
                 while GPIO.gpio_read(h, 11) == 1:
                     pass  # Wait for the pin to go low
 
     def getDistance(self):
         return distance
+
+    def resetDistance(self):
+        self.count = 0
 
 def main():
     chainage = input("Please enter the chainage number you are starting at: ")
@@ -117,6 +122,7 @@ def main():
                 save_images(key, threads, chainage, hall_thread)
             elif key == ord('c'):
                 chainage = input("Please enter new chainage number: ")
+                hall_thread.resetDistance()
             elif key == 27:  # ESC to exit
                 exit_event.set()
 
