@@ -32,7 +32,7 @@ def camPreview(previewName, cam):
             break
     cam.release()
     cv2.destroyWindow(previewName)
-
+## hfjd
 def save_images(key):
     """Saves images based on the pressed key."""
     timestamp = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
