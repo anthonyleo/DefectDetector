@@ -32,7 +32,7 @@ def camPreview(previewName, cam):
             break
     cam.release()
     cv2.destroyWindow(previewName)
-## hfjd
+
 def save_images(key):
     """Saves images based on the pressed key."""
     timestamp = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
@@ -52,13 +52,13 @@ def save_images(key):
                     label = "OK"
                 if label:  # Only save if label is defined
                     filename = f"{label}_{thread.previewName}_{timestamp}.jpg"
-                    path = 'C:/Users/AnthonyLeo/OneDrive - RSRG/Documents/Code/DefectDetector/Images'
+                    path = 'C:/Photos'
                     cv2.imwrite(os.path.join(path, filename), frame)
                     print(f"Saved {filename}")
 
 # Create and start camera threads
-thread1 = camThread("Left", 1)
-thread2 = camThread("Right", 2)
+thread1 = camThread("Left", 0)
+thread2 = camThread("Right", 1)
 thread1.start()
 thread2.start()
 print("\nActive threads:", threading.active_count())
