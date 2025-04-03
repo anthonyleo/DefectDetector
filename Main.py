@@ -130,6 +130,7 @@ def main():
             elif key == 27:  # ESC to exit
                 print("ESC key pressed. Exiting...")
                 exit_event.set()
+                break
 
         for thread in threads:
             thread.join()
@@ -142,6 +143,7 @@ def main():
                 thread.join()
         hall_sensor.close()  # Properly close the Hall effect sensor
         cv2.destroyAllWindows()
+        cv2.waitKey(1)  # Ensure all windows are closed
         print("All windows destroyed")
 
 def save_images(key, threads, chainage, hall_thread, txt_filepath):
