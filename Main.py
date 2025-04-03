@@ -88,16 +88,14 @@ def main():
     cv2.namedWindow("Right")
 
     # Position OpenCV windows
-    cv2.moveWindow("Left", 0, 0)  # Move "Left" window to top left corner
-    cv2.moveWindow("Right", 1280, 0)  # Move "Right" window to top right corner (adjust width as needed)
+    cv2.moveWindow("Left", 0, 0)
+    cv2.moveWindow("Right", 1280, 0)
 
-    # Create the text file with the current timestamp
     timestamp = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M")
     txt_filename = f"data-{timestamp}.txt"
     txt_filepath = os.path.join('/media/rohan/6790-17CB/Files', txt_filename)
 
     try:
-        # Create and start camera threads
         threads = [
             camThread("Left", 0),
             camThread("Right", 2)
@@ -106,7 +104,6 @@ def main():
         for thread in threads:
             thread.start()
 
-        # Create and start Hall effect sensor thread
         hall_thread = hallEffectThread(mock_mode=False)
         hall_thread.start()
 
@@ -114,11 +111,8 @@ def main():
 
         while not exit_event.is_set():
             if not frame_queue.empty():
-                frames = []
                 while not frame_queue.empty():
-                    frames.append(frame_queue.get())
-
-                for previewName, frame in frames:
+                    previewName, frame = frame_queue.get()
                     cv2.imshow(previewName, frame)
 
             key = cv2.waitKey(20) & 0xFF
@@ -127,22 +121,33 @@ def main():
             elif key == ord('c'):
                 chainage = input("Please enter new chainage number: ")
                 hall_thread.resetDistance()
-            elif key == 27:  # ESC to exit
+            elif key == 27:  # ESC key
                 print("ESC key pressed. Exiting...")
                 exit_event.set()
+                break  # Ensure exit loop
 
+        # Ensure all threads stop properly
         for thread in threads:
             thread.join()
         hall_thread.join()
 
     finally:
+        print("Cleaning up resources...")
+
+        # Stop camera threads safely
         for thread in threads:
             if thread.is_alive():
                 thread.stop()
                 thread.join()
-        hall_sensor.close()  # Properly close the Hall effect sensor
+
+        # Properly close Hall effect sensor
+        hall_sensor.close()
+
+        # Destroy all OpenCV windows
         cv2.destroyAllWindows()
-        print("All windows destroyed")
+        cv2.waitKey(1)  # Extra call to ensure windows close
+        print("All resources released. Program exited cleanly.")
+
 
 def save_images(key, threads, chainage, hall_thread, txt_filepath):
     """Saves images based on the pressed key and logs the filename to a text file."""
