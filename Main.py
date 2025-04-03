@@ -70,7 +70,7 @@ class hallEffectThread(threading.Thread):
                 if hall_sensor.is_pressed:
                     self.count += 1
                     distance = round(self.count * 2 * math.pi * radius * 0.001 * (1 / magNum), 1)
-                    print(f"Distance: {distance}m")
+                    #print(f"Distance: {distance}m")
                     while hall_sensor.is_pressed:
                         pass  # Wait for the pin to go low
 
