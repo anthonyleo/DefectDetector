@@ -110,6 +110,9 @@ def main():
         hall_thread = hallEffectThread(mock_mode=False)
         hall_thread.start()
 
+        # Reset distance after initializing the Hall effect sensor
+        hall_thread.resetDistance()
+
         print("Active threads:", threading.active_count())
 
         while not exit_event.is_set():
@@ -129,19 +132,24 @@ def main():
                 hall_thread.resetDistance()
             elif key == 27:  # ESC to exit
                 print("ESC key pressed. Exiting...")
-                exit_event.set()
                 break
 
-        for thread in threads:
-            thread.join()
-        hall_thread.join()
+    except Exception as e:
+        print(f"An error occurred: {e}")
 
     finally:
+        print("Stopping all threads...")
+
+        exit_event.set()  # Signal all threads to exit
+
         for thread in threads:
             if thread.is_alive():
                 thread.stop()
-                thread.join()
+                thread.join(timeout=5)  # Add timeout to prevent indefinite blocking
+
+        hall_thread.join(timeout=5)  # Add timeout to prevent indefinite blocking
         hall_sensor.close()  # Properly close the Hall effect sensor
+
         cv2.destroyAllWindows()
         cv2.waitKey(1)  # Ensure all windows are closed
         print("All windows destroyed")
