@@ -4,23 +4,19 @@ import threading
 import datetime
 import queue
 import math
-import lgpio as GPIO
+from gpiozero import Button
 
 # Define a global lock for synchronizing access to the cameras
 camera_lock = threading.Lock()
 frame_queue = queue.Queue()
 exit_event = threading.Event()
 distance = 0
-radius = 50 #radius of the wheel in mm
+radius = 50  # radius of the wheel in mm
+magNum = 2  # number of magnets on the wheel
+hallEffectSig = 17  # GPIO pin for Hall effect sensor
 
-# Setup GPIO
-try:
-    h = GPIO.gpiochip_open(0)
-    GPIO.gpio_claim_input(h, 11)
-except GPIO.error as e:
-    print(f"Error: {e}")
-    print("Ensure you have the necessary permissions and the GPIO chip is available.")
-    exit(1)
+# Initialize the Hall effect sensor
+hall_sensor = Button(hallEffectSig)
 
 class camThread(threading.Thread):
     def __init__(self, previewName, camID):
@@ -67,15 +63,15 @@ class hallEffectThread(threading.Thread):
             if self.mock_mode:
                 # Simulate the Hall effect sensor
                 self.count += 1
-                distance = round(self.count * 2*math.pi*radius*0.0005, 1)
-                #print(f"Mock Distance: {distance}m")
+                distance = round(self.count * 2 * math.pi * radius * 0.001 * (1 / magNum), 1)
                 threading.Event().wait(1)  # Simulate delay
-            elif GPIO.gpio_read(h, 11) == 1:
-                self.count += 1
-                distance = round(self.count * 2*math.pi*radius*0.0005, 1)  # Resolution of half a rotation 157mm travel
-                #print(f"Distance: {distance}m")
-                while GPIO.gpio_read(h, 11) == 1:
-                    pass  # Wait for the pin to go low
+            else:
+                if hall_sensor.is_pressed:
+                    self.count += 1
+                    distance = round(self.count * 2 * math.pi * radius * 0.001 * (1 / magNum), 1)
+                    print(f"Distance: {distance}m")
+                    while hall_sensor.is_pressed:
+                        pass  # Wait for the pin to go low
 
     def getDistance(self):
         return distance
@@ -103,7 +99,7 @@ def main():
             thread.start()
 
         # Create and start Hall effect sensor thread
-        hall_thread = hallEffectThread(mock_mode=True)
+        hall_thread = hallEffectThread(mock_mode=False)
         hall_thread.start()
 
         print("Active threads:", threading.active_count())
@@ -134,7 +130,6 @@ def main():
         for thread in threads:
             if thread.is_alive():
                 thread.stop()
-        GPIO.gpiochip_close(h)
         cv2.destroyAllWindows()
 
 def save_images(key, threads, chainage, hall_thread):
