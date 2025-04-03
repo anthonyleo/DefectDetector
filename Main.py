@@ -45,11 +45,12 @@ class camThread(threading.Thread):
             frame_queue.put((self.previewName, frame))
 
         self.cam.release()
+        print(f"Camera {self.previewName} released in run()")
 
     def stop(self):
         if self.cam.isOpened():
             self.cam.release()
-            print(f"Camera {self.previewName} released")
+            print(f"Camera {self.previewName} released in stop()")
 
 class hallEffectThread(threading.Thread):
     def __init__(self, mock_mode=False):
@@ -77,7 +78,9 @@ class hallEffectThread(threading.Thread):
         return distance
 
     def resetDistance(self):
+        global distance
         self.count = 0
+        distance = 0
 
 def main():
     chainage = input("Please enter the chainage number you are starting at: ")
@@ -87,6 +90,11 @@ def main():
     # Position OpenCV windows
     cv2.moveWindow("Left", 0, 0)  # Move "Left" window to top left corner
     cv2.moveWindow("Right", 1280, 0)  # Move "Right" window to top right corner (adjust width as needed)
+
+    # Create the text file with the current timestamp
+    timestamp = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M")
+    txt_filename = f"data-{timestamp}.txt"
+    txt_filepath = os.path.join('/media/rohan/6790-17CB/Files', txt_filename)
 
     try:
         # Create and start camera threads
@@ -113,13 +121,14 @@ def main():
                 for previewName, frame in frames:
                     cv2.imshow(previewName, frame)
 
-            key = cv2.waitKey(20)
+            key = cv2.waitKey(20) & 0xFF
             if key in [ord('a'), ord('s'), ord('d'), ord('w')]:
-                save_images(key, threads, chainage, hall_thread)
+                save_images(key, threads, chainage, hall_thread, txt_filepath)
             elif key == ord('c'):
                 chainage = input("Please enter new chainage number: ")
                 hall_thread.resetDistance()
             elif key == 27:  # ESC to exit
+                print("ESC key pressed. Exiting...")
                 exit_event.set()
 
         for thread in threads:
@@ -130,10 +139,13 @@ def main():
         for thread in threads:
             if thread.is_alive():
                 thread.stop()
+                thread.join()
+        hall_sensor.close()  # Properly close the Hall effect sensor
         cv2.destroyAllWindows()
+        print("All windows destroyed")
 
-def save_images(key, threads, chainage, hall_thread):
-    """Saves images based on the pressed key."""
+def save_images(key, threads, chainage, hall_thread, txt_filepath):
+    """Saves images based on the pressed key and logs the filename to a text file."""
     timestamp = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M")
     for thread in threads:
         if key == ord('a'):
@@ -147,9 +159,13 @@ def save_images(key, threads, chainage, hall_thread):
 
         if label:
             filename = f"{label}_{thread.previewName}_{hall_thread.getDistance()}m from chain {chainage}_{timestamp}.jpg"
-            path = '/home/rohan/Pictures'
+            path = '/media/rohan/6790-17CB/Pictures'
             cv2.imwrite(os.path.join(path, filename), frame_queue.get()[1])
             print(f"Saved {filename}")
+
+            # Append the filename to the text file
+            with open(txt_filepath, 'a') as f:
+                f.write(f"{filename}\n")
 
 if __name__ == "__main__":
     main()
