@@ -6,7 +6,7 @@ Start Up Process
 ***************************************************************************
 1. Open Terminal
 2. Place the terminal in the bottom middle position of the screen.
-3. Copy and Paste '' and press enter
+3. Copy and Paste '/home/rohan/miniconda3/envs/DefectDetector/bin/python /home/rohan/PycharmProjects/DefectDetector/Main.py' and press enter
 4. Enter your starting chainage number as your reference point
 5. Camera feeds for left and right camera will open
 6. Left click mouse into either of these camera feed windows
@@ -37,4 +37,4 @@ Assessing Data
       Pictures - All saved pictures captured from the camera feeds during inspection with specific filenames to determine their location and status.
       Files - Data logs of files captured to provide evidence of inspections carried out..
 5. Once data has been taken (Ensure folders 'Pictures' and 'Files' have not been removed)
-6. Re-plug the USB stick drive back into the raspbery pi in the same USB port it was taken out of to begin running code again.
+6. Re-plug the USB stick drive back into the raspberry pi in the same USB port it was taken out of to begin running code again.
