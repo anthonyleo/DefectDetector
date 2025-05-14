@@ -4,23 +4,19 @@ import threading
 import datetime
 import queue
 import math
-import lgpio as GPIO
+from gpiozero import Button
 
 # Define a global lock for synchronizing access to the cameras
 camera_lock = threading.Lock()
 frame_queue = queue.Queue()
 exit_event = threading.Event()
 distance = 0
-radius = 50 #radius of the wheel in mm
+radius = 50  # radius of the wheel in mm
+magNum = 2  # number of magnets on the wheel
+hallEffectSig = 17  # GPIO pin for Hall effect sensor
 
-# Setup GPIO
-try:
-    h = GPIO.gpiochip_open(0)
-    GPIO.gpio_claim_input(h, 11)
-except GPIO.error as e:
-    print(f"Error: {e}")
-    print("Ensure you have the necessary permissions and the GPIO chip is available.")
-    exit(1)
+# Initialize the Hall effect sensor
+hall_sensor = Button(hallEffectSig)
 
 class camThread(threading.Thread):
     def __init__(self, previewName, camID):
@@ -49,11 +45,12 @@ class camThread(threading.Thread):
             frame_queue.put((self.previewName, frame))
 
         self.cam.release()
+        print(f"Camera {self.previewName} released in run()")
 
     def stop(self):
         if self.cam.isOpened():
             self.cam.release()
-            print(f"Camera {self.previewName} released")
+            print(f"Camera {self.previewName} released in stop()")
 
 class hallEffectThread(threading.Thread):
     def __init__(self, mock_mode=False):
@@ -67,43 +64,23 @@ class hallEffectThread(threading.Thread):
             if self.mock_mode:
                 # Simulate the Hall effect sensor
                 self.count += 1
-                distance = round(self.count * 2*math.pi*radius*0.0005, 1)
-                #print(f"Mock Distance: {distance}m")
+                distance = round(self.count * 2 * math.pi * radius * 0.001 * (1 / magNum), 1)
                 threading.Event().wait(1)  # Simulate delay
-            elif GPIO.gpio_read(h, 11) == 1:
-                self.count += 1
-                distance = round(self.count * 2*math.pi*radius*0.0005, 1)  # Resolution of half a rotation 157mm travel
-                #print(f"Distance: {distance}m")
-                while GPIO.gpio_read(h, 11) == 1:
-                    pass  # Wait for the pin to go low
+            else:
+                if hall_sensor.is_pressed:
+                    self.count += 1
+                    distance = round(self.count * 2 * math.pi * radius * 0.001 * (1 / magNum), 1)
+                    #print(f"Distance: {distance}m")
+                    while hall_sensor.is_pressed:
+                        pass  # Wait for the pin to go low
 
     def getDistance(self):
         return distance
 
     def resetDistance(self):
+        global distance
         self.count = 0
-        
-class BatteryLoggerThread(threading.Thread):
-    def __init__(self, log_file_path="/home/pi/battery_life_log.txt"):
-        threading.Thread.__init__(self)
-        self.log_file_path = log_file_path
-        self.running = True
-
-    def run(self):
-        print("Starting battery life logger...")
-        try:
-            with open(self.log_file_path, "a") as file:
-                while self.running:
-                    now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                    file.write(f"{now}\n")
-                    file.flush()  # Force write to disk each time
-                    print(f"Logged: {now}")
-                    time.sleep(60)  # Log every 60 seconds
-        except Exception as e:
-            print(f"Battery logger error: {e}")
-
-    def stop(self):
-        self.running = False
+        distance = 0
 
 def main():
     chainage = input("Please enter the chainage number you are starting at: ")
@@ -117,6 +94,11 @@ def main():
     battery_logger = BatteryLoggerThread()
     battery_logger.start()
 
+    # Create the text file with the current timestamp
+    timestamp = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M")
+    txt_filename = f"data-{timestamp}.txt"
+    txt_filepath = os.path.join('/media/rohan/6790-17CB/Files', txt_filename)
+
     try:
         # Create and start camera threads
         threads = [
@@ -128,8 +110,11 @@ def main():
             thread.start()
 
         # Create and start Hall effect sensor thread
-        hall_thread = hallEffectThread(mock_mode=True)
+        hall_thread = hallEffectThread(mock_mode=False)
         hall_thread.start()
+
+        # Reset distance after initializing the Hall effect sensor
+        hall_thread.resetDistance()
 
         print("Active threads:", threading.active_count())
 
@@ -142,30 +127,38 @@ def main():
                 for previewName, frame in frames:
                     cv2.imshow(previewName, frame)
 
-            key = cv2.waitKey(20)
+            key = cv2.waitKey(20) & 0xFF
             if key in [ord('a'), ord('s'), ord('d'), ord('w')]:
-                save_images(key, threads, chainage, hall_thread)
+                save_images(key, threads, chainage, hall_thread, txt_filepath)
             elif key == ord('c'):
                 chainage = input("Please enter new chainage number: ")
                 hall_thread.resetDistance()
             elif key == 27:  # ESC to exit
-                exit_event.set()
+                print("ESC key pressed. Exiting...")
+                break
 
-        for thread in threads:
-            thread.join()
-        hall_thread.join()
+    except Exception as e:
+        print(f"An error occurred: {e}")
 
     finally:
+        print("Stopping all threads...")
+
+        exit_event.set()  # Signal all threads to exit
+
         for thread in threads:
             if thread.is_alive():
                 thread.stop()
-        battery_logger.stop()
-        battery_logger.join()
-        GPIO.gpiochip_close(h)
-        cv2.destroyAllWindows()
+                thread.join(timeout=5)  # Add timeout to prevent indefinite blocking
 
-def save_images(key, threads, chainage, hall_thread):
-    """Saves images based on the pressed key."""
+        hall_thread.join(timeout=5)  # Add timeout to prevent indefinite blocking
+        hall_sensor.close()  # Properly close the Hall effect sensor
+
+        cv2.destroyAllWindows()
+        cv2.waitKey(1)  # Ensure all windows are closed
+        print("All windows destroyed")
+
+def save_images(key, threads, chainage, hall_thread, txt_filepath):
+    """Saves images based on the pressed key and logs the filename to a text file."""
     timestamp = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M")
     for thread in threads:
         if key == ord('a'):
@@ -179,9 +172,13 @@ def save_images(key, threads, chainage, hall_thread):
 
         if label:
             filename = f"{label}_{thread.previewName}_{hall_thread.getDistance()}m from chain {chainage}_{timestamp}.jpg"
-            path = '/home/rohan/Pictures'
+            path = '/media/rohan/6790-17CB/Pictures'
             cv2.imwrite(os.path.join(path, filename), frame_queue.get()[1])
             print(f"Saved {filename}")
+
+            # Append the filename to the text file
+            with open(txt_filepath, 'a') as f:
+                f.write(f"{filename}\n")
 
 if __name__ == "__main__":
     main()
