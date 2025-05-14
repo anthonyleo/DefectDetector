@@ -4,6 +4,7 @@ import threading
 import datetime
 import queue
 import math
+import time
 from gpiozero import Button
 
 # Define a global lock for synchronizing access to the cameras
