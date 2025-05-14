@@ -81,28 +81,6 @@ class hallEffectThread(threading.Thread):
         global distance
         self.count = 0
         distance = 0
-        
-class BatteryLoggerThread(threading.Thread):
-    def __init__(self, log_file_path="/home/pi/battery_life_log.txt"):
-        threading.Thread.__init__(self)
-        self.log_file_path = log_file_path
-        self.running = True
-
-    def run(self):
-        print("Starting battery life logger...")
-        try:
-            with open(self.log_file_path, "a") as file:
-                while self.running:
-                    now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                    file.write(f"{now}\n")
-                    file.flush()  # Force write to disk each time
-                    print(f"Logged: {now}")
-                    time.sleep(60)  # Log every 60 seconds
-        except Exception as e:
-            print(f"Battery logger error: {e}")
-
-    def stop(self):
-        self.running = False
 
 def main():
     chainage = input("Please enter the chainage number you are starting at: ")
@@ -112,9 +90,6 @@ def main():
     # Position OpenCV windows
     cv2.moveWindow("Left", 0, 0)  # Move "Left" window to top left corner
     cv2.moveWindow("Right", 1280, 0)  # Move "Right" window to top right corner (adjust width as needed)
-    
-    battery_logger = BatteryLoggerThread()
-    battery_logger.start()
 
     # Create the text file with the current timestamp
     timestamp = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M")
@@ -177,7 +152,7 @@ def main():
 
         cv2.destroyAllWindows()
         cv2.waitKey(1)  # Ensure all windows are closed
-        print("All windows destroyed") #Here
+        print("All windows destroyed")
 
 def save_images(key, threads, chainage, hall_thread, txt_filepath):
     """Saves images based on the pressed key and logs the filename to a text file."""
