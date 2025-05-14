@@ -1,10 +1,18 @@
 import cv2
-print(cv2.getBuildInformation())
-index = 0
-while True:
-    cap = cv2.VideoCapture(index)
-    if not cap.read()[0]:
-        break
-    print(f"Camera {index} is available")
-    cap.release()
-    index += 1
+
+def main():
+    cv2.namedWindow("Key Test")
+
+    print("Press any key to see its number. Press ESC to exit.")
+
+    while True:
+        key = cv2.waitKey(0) & 0xFF
+        print(f"Key pressed: {key}")
+
+        if key == 27:  # ESC key
+            break
+
+    cv2.destroyAllWindows()
+
+if __name__ == "__main__":
+    main()

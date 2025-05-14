@@ -152,7 +152,7 @@ def main():
 
         cv2.destroyAllWindows()
         cv2.waitKey(1)  # Ensure all windows are closed
-        print("All windows destroyed")
+        print("All windows destroyed") #Here
 
 def save_images(key, threads, chainage, hall_thread, txt_filepath):
     """Saves images based on the pressed key and logs the filename to a text file."""
