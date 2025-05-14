@@ -90,6 +90,9 @@ def main():
     # Position OpenCV windows
     cv2.moveWindow("Left", 0, 0)  # Move "Left" window to top left corner
     cv2.moveWindow("Right", 1280, 0)  # Move "Right" window to top right corner (adjust width as needed)
+    
+    battery_logger = BatteryLoggerThread()
+    battery_logger.start()
 
     # Create the text file with the current timestamp
     timestamp = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M")
