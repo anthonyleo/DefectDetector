@@ -94,7 +94,7 @@ def main():
     # Create the text file with the current timestamp
     timestamp = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M")
     txt_filename = f"data-{timestamp}.txt"
-    txt_filepath = os.path.join('/media/rohan/6790-17CB/Files', txt_filename)
+    txt_filepath = os.path.join('/media/rohan/6790-17CB1/Files', txt_filename)
 
     try:
         # Create and start camera threads
@@ -169,7 +169,7 @@ def save_images(key, threads, chainage, hall_thread, txt_filepath):
 
         if label:
             filename = f"{label}_{thread.previewName}_{hall_thread.getDistance()}m from chain {chainage}_{timestamp}.jpg"
-            path = '/media/rohan/6790-17CB/Pictures'
+            path = '/media/rohan/6790-17CB1/Pictures'
             cv2.imwrite(os.path.join(path, filename), frame_queue.get()[1])
             print(f"Saved {filename}")
 
