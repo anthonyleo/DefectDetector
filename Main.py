@@ -83,7 +83,7 @@ class hallEffectThread(threading.Thread):
         distance = 0
 
 class BatteryLoggerThread(threading.Thread):
-    def __init__(self, log_file_path="/home/pi/battery_life_log.txt"):
+    def __init__(self, log_file_path="/home/rohan/battery_life_log.txt"):
         threading.Thread.__init__(self)
         self.log_file_path = log_file_path
         self.running = True
