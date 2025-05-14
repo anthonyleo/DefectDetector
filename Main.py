@@ -81,6 +81,28 @@ class hallEffectThread(threading.Thread):
         global distance
         self.count = 0
         distance = 0
+        
+class BatteryLoggerThread(threading.Thread):
+    def __init__(self, log_file_path="/home/pi/battery_life_log.txt"):
+        threading.Thread.__init__(self)
+        self.log_file_path = log_file_path
+        self.running = True
+
+    def run(self):
+        print("Starting battery life logger...")
+        try:
+            with open(self.log_file_path, "a") as file:
+                while self.running:
+                    now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                    file.write(f"{now}\n")
+                    file.flush()  # Force write to disk each time
+                    print(f"Logged: {now}")
+                    time.sleep(60)  # Log every 60 seconds
+        except Exception as e:
+            print(f"Battery logger error: {e}")
+
+    def stop(self):
+        self.running = False
 
 def main():
     chainage = input("Please enter the chainage number you are starting at: ")
